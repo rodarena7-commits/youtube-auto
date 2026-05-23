@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: youtube-auto
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: PEXELS_API_KEY
+        sync: false
+      - key: YOUTUBE_CLIENT_ID
+        sync: false
+      - key: YOUTUBE_CLIENT_SECRET
+        sync: false
+      - key: YOUTUBE_REDIRECT_URI
+        sync: false
+      - key: YOUTUBE_REFRESH_TOKEN
+        sync: false
+      - key: UPLOAD_PASSWORD
+        sync: false
+      - key: NICHE
+        value: "finanzas personales e inversiones en Argentina"
+      - key: CHANNEL_NAME
+        value: "rodarena7"
+      - key: CRON_SCHEDULE
+        value: "0 9 * * *"
+      - key: VIDEO_PRIVACY
+        value: "public"
