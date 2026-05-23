@@ -41,20 +41,14 @@ async function concatenateClips(clipPaths, outputPath) {
   })
 }
 
-// Mezcla video con audio de voz y agrega watermark de texto
+// Mezcla video con audio de voz
 async function mixVideoAudio(videoPath, audioPath, outputPath, title) {
-  const watermark = CHANNEL_NAME
-
   return new Promise((resolve, reject) => {
     ffmpeg()
       .input(videoPath)
       .input(audioPath)
-      .complexFilter([
-        // Watermark abajo a la derecha
-        `[0:v]drawtext=text='${watermark.replace(/'/g, "\\'")}':fontsize=28:fontcolor=white@0.6:x=w-tw-20:y=h-th-20:shadowcolor=black@0.5:shadowx=2:shadowy=2[vw]`,
-      ])
       .outputOptions([
-        '-map [vw]',
+        '-map 0:v',
         '-map 1:a',
         '-c:v libx264',
         '-preset ultrafast',
