@@ -8,205 +8,281 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0a0a;color:#e5e5e5;min-height:100vh;padding:1.5rem}
 .top{max-width:720px;margin:0 auto}
-h1{font-size:1.5rem;font-weight:800;color:#fff;margin-bottom:0.25rem}
-.sub{color:#666;font-size:0.85rem;margin-bottom:1.5rem}
-.red{color:#ff0000}.grn{color:#22c55e}.ylw{color:#facc15}.red2{color:#f87171}
+h1{font-size:1.5rem;font-weight:800;color:#fff;margin-bottom:.2rem}
+.sub{color:#555;font-size:.85rem;margin-bottom:1.5rem}
 
-/* Status card */
 .card{background:#161616;border:1px solid #262626;border-radius:16px;padding:1.25rem;margin-bottom:1rem}
-.card-title{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#555;margin-bottom:.75rem}
-.status-row{display:flex;align-items:center;gap:.75rem}
-.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.dot.idle{background:#333}.dot.running{background:#facc15;animation:pulse 1s infinite}
-.dot.done{background:#22c55e}.dot.error{background:#f87171}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.status-label{font-weight:700;font-size:1rem}
-.step-text{color:#666;font-size:.8rem;margin-top:.3rem}
+.card-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#444;margin-bottom:.85rem}
 
-/* Progress */
-.progress-wrap{margin-top:.75rem;display:none}
-.progress-wrap.show{display:block}
-.bar-bg{height:4px;background:#262626;border-radius:2px;overflow:hidden}
-.bar-fill{height:100%;background:linear-gradient(90deg,#ff0000,#ff6b6b);border-radius:2px;transition:width .4s;width:0}
+/* Status header */
+.status-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
+.dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+.dot.idle{background:#2a2a2a;border:2px solid #333}
+.dot.running{background:#facc15;animation:pulse 1s infinite;box-shadow:0 0 8px #facc1580}
+.dot.done{background:#22c55e;box-shadow:0 0 8px #22c55e60}
+.dot.error{background:#f87171;box-shadow:0 0 8px #f8717160}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.status-title{font-weight:700;font-size:1rem;line-height:1.2}
+.status-sub{font-size:.75rem;color:#555;margin-top:.15rem}
+
+/* Big progress bar */
+.prog-wrap{margin-bottom:1rem}
+.prog-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem}
+.prog-label{font-size:.78rem;color:#666}
+.prog-pct{font-size:1rem;font-weight:800;color:#fff}
+.prog-bg{height:8px;background:#1f1f1f;border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:4px;transition:width .5s ease;background:linear-gradient(90deg,#ff0000,#ff6b6b)}
+.prog-fill.done{background:linear-gradient(90deg,#16a34a,#22c55e)}
+.prog-fill.error{background:#7f1d1d}
+
+/* Steps list */
+.steps{display:flex;flex-direction:column;gap:.5rem}
+.step{display:flex;align-items:center;gap:.75rem;padding:.6rem .8rem;border-radius:10px;background:#0f0f0f;border:1px solid #1f1f1f;transition:all .3s}
+.step.running{background:#1a1500;border-color:#facc1540}
+.step.done{background:#0a1a0a;border-color:#16a34a30}
+.step.error{background:#1a0a0a;border-color:#7f1d1d40}
+.step-icon{font-size:1rem;width:24px;text-align:center;flex-shrink:0}
+.step-body{flex:1}
+.step-name{font-size:.85rem;font-weight:600;color:#ccc}
+.step.running .step-name{color:#fde047}
+.step.done .step-name{color:#86efac}
+.step.error .step-name{color:#fca5a5}
+.step-detail{font-size:.72rem;color:#444;margin-top:.1rem}
+.step.running .step-detail{color:#78716c}
+.spinner{display:inline-block;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* Config */
-.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;font-size:.8rem}
-.cfg-item{background:#0f0f0f;border-radius:10px;padding:.6rem .9rem}
-.cfg-label{color:#555;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em}
-.cfg-val{color:#e5e5e5;font-weight:600;margin-top:.15rem}
-
-/* Btn */
-.btn{padding:.75rem 1.5rem;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s}
-.btn-red{background:#ff0000;color:#fff}.btn-red:hover{background:#cc0000;transform:translateY(-1px)}
-.btn-red:disabled{opacity:.4;transform:none;cursor:not-allowed}
-.btn-ghost{background:#1a1a1a;color:#aaa;border:1px solid #2a2a2a}.btn-ghost:hover{border-color:#ff0000;color:#ff0000}
-
-/* History */
-.history-item{background:#0f0f0f;border-radius:10px;padding:.75rem 1rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.75rem}
-.hi-icon{font-size:1.2rem;flex-shrink:0}
-.hi-body{flex:1;min-width:0}
-.hi-title{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hi-date{font-size:.7rem;color:#555;margin-top:.1rem}
-.hi-link{color:#ff0000;text-decoration:none;font-size:.75rem;font-weight:600;flex-shrink:0}
-.hi-link:hover{text-decoration:underline}
-.hi-err{color:#f87171;font-size:.72rem;margin-top:.1rem}
-.empty{text-align:center;color:#333;padding:2rem;font-size:.85rem}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.cfg-item{background:#0f0f0f;border-radius:10px;padding:.6rem .85rem}
+.cfg-l{color:#444;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em}
+.cfg-v{color:#ccc;font-weight:600;margin-top:.15rem;font-size:.85rem}
 
 /* Checks */
-.checks{display:flex;flex-wrap:wrap;gap:.5rem}
-.check{display:flex;align-items:center;gap:.35rem;background:#0f0f0f;border-radius:8px;padding:.4rem .7rem;font-size:.75rem}
-.check-ok{border:1px solid #166534;color:#22c55e}
-.check-bad{border:1px solid #7f1d1d;color:#f87171}
+.checks{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem}
+.chk{display:flex;align-items:center;gap:.35rem;border-radius:8px;padding:.35rem .7rem;font-size:.75rem;font-weight:600}
+.chk.ok{background:#052e16;border:1px solid #166534;color:#22c55e}
+.chk.bad{background:#1c0a0a;border:1px solid #7f1d1d;color:#f87171}
+
+/* Buttons */
+.btns{display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap}
+.btn{padding:.7rem 1.4rem;border:none;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem}
+.btn-red{background:#dc2626;color:#fff}.btn-red:hover{background:#b91c1c;transform:translateY(-1px)}
+.btn-red:disabled{opacity:.4;transform:none;cursor:not-allowed}
+.btn-ghost{background:#1a1a1a;color:#aaa;border:1px solid #2a2a2a}.btn-ghost:hover{border-color:#dc2626;color:#f87171}
+
+/* History */
+.hi{background:#0f0f0f;border-radius:10px;padding:.75rem 1rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.75rem}
+.hi-ico{font-size:1.1rem;flex-shrink:0}
+.hi-body{flex:1;min-width:0}
+.hi-title{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#ccc}
+.hi-date{font-size:.7rem;color:#444;margin-top:.1rem}
+.hi-err{color:#f87171;font-size:.7rem;margin-top:.1rem}
+.hi-link{color:#ff0000;text-decoration:none;font-size:.75rem;font-weight:700;flex-shrink:0}
+.hi-link:hover{text-decoration:underline}
+.empty{text-align:center;color:#333;padding:2rem;font-size:.85rem}
 </style>
 </head>
 <body>
 <div class="top">
 
   <h1>📹 YouTube Auto Generator</h1>
-  <p class="sub">Genera y sube videos automáticamente con IA</p>
+  <p class="sub">Canal: <strong style="color:#ccc" id="channelName">—</strong> · Genera y sube videos automáticamente con IA</p>
 
-  <!-- Estado actual -->
+  <!-- Estado + pasos -->
   <div class="card">
-    <div class="card-title">Estado</div>
-    <div class="status-row">
+    <div class="card-title">Progreso</div>
+
+    <div class="status-header">
       <div class="dot idle" id="statusDot"></div>
       <div>
-        <div class="status-label" id="statusLabel">Esperando...</div>
-        <div class="step-text" id="stepText">—</div>
+        <div class="status-title" id="statusTitle">Esperando...</div>
+        <div class="status-sub" id="statusSub">El scheduler corre automáticamente según el horario configurado</div>
       </div>
     </div>
-    <div class="progress-wrap" id="progressWrap">
-      <div class="bar-bg"><div class="bar-fill" id="barFill"></div></div>
+
+    <div class="prog-wrap" id="progWrap" style="display:none">
+      <div class="prog-header">
+        <span class="prog-label" id="progLabel">Procesando...</span>
+        <span class="prog-pct" id="progPct">0%</span>
+      </div>
+      <div class="prog-bg"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
     </div>
+
+    <div class="steps" id="stepsList" style="display:none"></div>
   </div>
 
   <!-- Config -->
   <div class="card">
     <div class="card-title">Configuración</div>
-    <div class="config-grid" id="configGrid">
-      <div class="cfg-item"><div class="cfg-label">Nicho</div><div class="cfg-val" id="cfgNiche">—</div></div>
-      <div class="cfg-item"><div class="cfg-label">Horario</div><div class="cfg-val" id="cfgSchedule">—</div></div>
+    <div class="cfg-grid">
+      <div class="cfg-item"><div class="cfg-l">Nicho</div><div class="cfg-v" id="cfgNiche">—</div></div>
+      <div class="cfg-item"><div class="cfg-l">Horario</div><div class="cfg-v" id="cfgSched">—</div></div>
     </div>
-    <div class="checks" id="checks" style="margin-top:.75rem"></div>
+    <div class="checks" id="checks"></div>
   </div>
 
   <!-- Botones -->
-  <div style="display:flex;gap:.75rem;margin-bottom:1rem">
-    <button class="btn btn-red" id="generateBtn" onclick="triggerGenerate()">⚡ Generar ahora</button>
-    <a href="/auth" target="_blank"><button class="btn btn-ghost" type="button">🔑 Auth YouTube</button></a>
+  <div class="btns">
+    <button class="btn btn-red" id="genBtn" onclick="triggerGenerate()">⚡ Generar ahora</button>
+    <a href="/auth" target="_blank" class="btn btn-ghost">🔑 Auth YouTube</a>
   </div>
 
   <!-- Historial -->
   <div class="card">
-    <div class="card-title">Historial de videos</div>
-    <div id="historyList"><div class="empty">Todavía no hay videos generados</div></div>
+    <div class="card-title">Historial</div>
+    <div id="histList"><div class="empty">Todavía no hay videos generados</div></div>
   </div>
 
 </div>
-
 <script>
-let polling = null
+const STEP_ICONS = {
+  script:  { pending:'📝', running:'📝', done:'✅', error:'❌' },
+  voice:   { pending:'🎤', running:'🎤', done:'✅', error:'❌' },
+  footage: { pending:'📹', running:'📹', done:'✅', error:'❌' },
+  editing: { pending:'🎬', running:'🎬', done:'✅', error:'❌' },
+  upload:  { pending:'⬆️', running:'⬆️', done:'✅', error:'❌' },
+}
 
 async function loadStatus() {
   try {
-    const [statusRes, healthRes] = await Promise.all([
-      fetch('/status').then(r => r.json()),
-      fetch('/health').then(r => r.json()),
+    const [s, h] = await Promise.all([
+      fetch('/status').then(r=>r.json()),
+      fetch('/health').then(r=>r.json()),
     ])
 
     // Config
-    document.getElementById('cfgNiche').textContent = healthRes.niche || '—'
-    document.getElementById('cfgSchedule').textContent = cronToHuman(healthRes.schedule)
+    document.getElementById('cfgNiche').textContent = h.niche || '—'
+    document.getElementById('cfgSched').textContent = cronToHuman(h.schedule)
+    document.getElementById('channelName').textContent = h.channel || '—'
+    document.getElementById('checks').innerHTML = [
+      ['YouTube', h.ytReady], ['Groq AI', h.openaiReady], ['Pexels', h.pexelsReady],
+    ].map(([n,ok])=>`<div class="chk ${ok?'ok':'bad'}">${ok?'✓':'✗'} ${n}</div>`).join('')
 
-    // Checks
-    const checks = document.getElementById('checks')
-    checks.innerHTML = [
-      ['YouTube', healthRes.ytReady],
-      ['Groq AI', healthRes.openaiReady],
-      ['Pexels', healthRes.pexelsReady],
-    ].map(([name, ok]) =>
-      `<div class="check ${ok ? 'check-ok' : 'check-bad'}">${ok ? '✓' : '✗'} ${name}</div>`
-    ).join('')
-
-    // Status
-    const { running, lastJob, history } = statusRes
+    const { running, lastJob, history } = s
     const dot   = document.getElementById('statusDot')
-    const label = document.getElementById('statusLabel')
-    const step  = document.getElementById('stepText')
-    const btn   = document.getElementById('generateBtn')
-    const prog  = document.getElementById('progressWrap')
-    const bar   = document.getElementById('barFill')
+    const title = document.getElementById('statusTitle')
+    const sub   = document.getElementById('statusSub')
+    const btn   = document.getElementById('genBtn')
+    const progW = document.getElementById('progWrap')
+    const progF = document.getElementById('progFill')
+    const progP = document.getElementById('progPct')
+    const progL = document.getElementById('progLabel')
+    const stepL = document.getElementById('stepsList')
 
-    dot.className = 'dot ' + (running ? 'running' : (lastJob?.status || 'idle'))
-    btn.disabled  = running
+    btn.disabled = running
 
     if (running && lastJob) {
-      label.textContent = lastJob.title ? `"${lastJob.title}"` : 'Generando...'
-      step.textContent  = lastJob.step || '...'
-      prog.classList.add('show')
-      const pct = lastJob.step?.match(/(\d+)%/)?.[1] || 0
-      bar.style.width = pct + '%'
+      const pct = lastJob.overallPct || 0
+      dot.className = 'dot running'
+      title.textContent = lastJob.title ? `"${lastJob.title}"` : 'Generando video...'
+      sub.textContent   = `${pct}% completado`
+
+      progW.style.display = 'block'
+      progF.className  = 'prog-fill'
+      progF.style.width = pct + '%'
+      progP.textContent = pct + '%'
+      progL.textContent = currentStepLabel(lastJob.steps)
+
+      stepL.style.display = 'flex'
+      stepL.innerHTML = renderSteps(lastJob.steps)
+
     } else if (lastJob?.status === 'done') {
-      label.textContent = '✅ Último: ' + (lastJob.title || 'Video')
-      step.textContent  = lastJob.finishedAt ? new Date(lastJob.finishedAt).toLocaleString('es-AR') : ''
-      prog.classList.remove('show')
+      dot.className = 'dot done'
+      title.textContent = '✅ ' + (lastJob.title || 'Video publicado')
+      sub.textContent   = lastJob.finishedAt ? new Date(lastJob.finishedAt).toLocaleString('es-AR') : ''
+      progW.style.display = 'block'
+      progF.className  = 'prog-fill done'
+      progF.style.width = '100%'
+      progP.textContent = '100%'
+      progL.textContent = 'Completado'
+      stepL.style.display = 'flex'
+      stepL.innerHTML = renderSteps(lastJob.steps)
+
     } else if (lastJob?.status === 'error') {
-      label.textContent = '❌ Error en último video'
-      step.textContent  = lastJob.error || ''
-      prog.classList.remove('show')
+      dot.className = 'dot error'
+      title.textContent = '❌ Error en el último video'
+      sub.textContent   = lastJob.error || ''
+      progW.style.display = 'block'
+      progF.className  = 'prog-fill error'
+      progF.style.width = (lastJob.overallPct || 0) + '%'
+      progP.textContent = (lastJob.overallPct || 0) + '%'
+      progL.textContent = 'Falló'
+      stepL.style.display = 'flex'
+      stepL.innerHTML = renderSteps(lastJob.steps)
+
     } else {
-      label.textContent = 'Esperando próximo video...'
-      step.textContent  = 'El scheduler corre automáticamente según el horario'
-      prog.classList.remove('show')
+      dot.className = 'dot idle'
+      title.textContent = 'Esperando...'
+      sub.textContent   = 'El scheduler corre automáticamente según el horario configurado'
+      progW.style.display = 'none'
+      stepL.style.display = 'none'
     }
 
     // History
-    const list = document.getElementById('historyList')
-    if (!history || history.length === 0) {
+    const list = document.getElementById('histList')
+    if (!history?.length) {
       list.innerHTML = '<div class="empty">Todavía no hay videos generados</div>'
     } else {
       list.innerHTML = history.map(h => `
-        <div class="history-item">
-          <div class="hi-icon">${h.status === 'done' ? '✅' : '❌'}</div>
+        <div class="hi">
+          <div class="hi-ico">${h.status==='done'?'✅':'❌'}</div>
           <div class="hi-body">
-            <div class="hi-title">${h.title || 'Sin título'}</div>
-            <div class="hi-date">${h.finishedAt ? new Date(h.finishedAt).toLocaleString('es-AR') : ''}</div>
-            ${h.error ? `<div class="hi-err">${h.error}</div>` : ''}
+            <div class="hi-title">${h.title||'Sin título'}</div>
+            <div class="hi-date">${h.finishedAt?new Date(h.finishedAt).toLocaleString('es-AR'):''}</div>
+            ${h.error?`<div class="hi-err">${h.error}</div>`:''}
           </div>
-          ${h.videoUrl ? `<a class="hi-link" href="${h.videoUrl}" target="_blank">▶ Ver</a>` : ''}
-        </div>
-      `).join('')
+          ${h.videoUrl?`<a class="hi-link" href="${h.videoUrl}" target="_blank">▶ Ver</a>`:''}
+        </div>`).join('')
     }
+  } catch(e) { console.error(e) }
+}
 
-  } catch(e) {
-    console.error(e)
-  }
+function renderSteps(steps) {
+  if (!steps) return ''
+  return steps.map(s => {
+    const icon = STEP_ICONS[s.key]?.[s.status] || '⏳'
+    const spin = s.status === 'running'
+    return `
+      <div class="step ${s.status}">
+        <div class="step-icon">${spin ? `<span class="spinner">${icon}</span>` : icon}</div>
+        <div class="step-body">
+          <div class="step-name">${s.label}</div>
+          <div class="step-detail">${s.status === 'pending' ? 'Pendiente' : s.status === 'running' ? 'En proceso...' : s.status === 'done' ? 'Completado' : 'Error'}</div>
+        </div>
+        <div style="font-size:.7rem;color:#333">${s.pct}%</div>
+      </div>`
+  }).join('')
+}
+
+function currentStepLabel(steps) {
+  if (!steps) return ''
+  const running = steps.find(s => s.status === 'running')
+  return running ? running.label + '...' : ''
 }
 
 async function triggerGenerate() {
-  const btn = document.getElementById('generateBtn')
-  btn.disabled = true
-  btn.textContent = 'Iniciando...'
+  document.getElementById('genBtn').disabled = true
+  document.getElementById('genBtn').textContent = 'Iniciando...'
   try {
-    const res = await fetch('/generate', { method: 'POST' })
-    const data = await res.json()
-    if (data.error) alert(data.error)
-  } catch(e) {
-    alert('Error: ' + e.message)
-  }
-  setTimeout(() => { btn.textContent = '⚡ Generar ahora'; loadStatus() }, 1500)
+    const r = await fetch('/generate', { method:'POST' })
+    const d = await r.json()
+    if (d.error) { alert(d.error); document.getElementById('genBtn').disabled = false }
+  } catch(e) { alert('Error: '+e.message); document.getElementById('genBtn').disabled = false }
+  setTimeout(loadStatus, 1200)
 }
 
-function cronToHuman(cron) {
-  if (!cron) return '—'
-  if (cron === '0 9 * * *') return 'Todos los días a las 9:00 AM'
-  if (cron === '0 9,18 * * *') return 'Dos veces al día (9:00 y 18:00)'
-  if (cron === '0 */6 * * *') return 'Cada 6 horas'
-  return cron
+function cronToHuman(c) {
+  if (!c) return '—'
+  if (c==='0 9 * * *')    return 'Todos los días 9:00 AM'
+  if (c==='0 9,21 * * *') return '9:00 AM y 9:00 PM'
+  if (c==='0 */6 * * *')  return 'Cada 6 horas'
+  if (c==='0 */12 * * *') return 'Cada 12 horas'
+  return c
 }
 
 loadStatus()
-setInterval(loadStatus, 5000)
+setInterval(loadStatus, 4000)
 </script>
 </body>
 </html>
