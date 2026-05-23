@@ -7,18 +7,27 @@ const os         = require('os')
 ffmpeg.setFfmpegPath(ffmpegPath)
 
 const CHANNEL_NAME = process.env.CHANNEL_NAME || 'Mi Canal'
+const VIDEO_WIDTH = parseInt(process.env.VIDEO_WIDTH) || 1280
+const VIDEO_HEIGHT = parseInt(process.env.VIDEO_HEIGHT) || 720
 
-// Escala + recorta un clip a 1920x1080 con duración exacta
+// Escala + recorta un clip a la resolución configurada con duración exacta
 async function processClip(inputPath, outputPath, duration) {
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
       .duration(duration)
       .videoFilter([
-        'scale=1920:1080:force_original_aspect_ratio=increase',
-        'crop=1920:1080',
+        `scale=${VIDEO_WIDTH}:${VIDEO_HEIGHT}:force_original_aspect_ratio=increase`,
+        `crop=${VIDEO_WIDTH}:${VIDEO_HEIGHT}`,
         'setsar=1',
       ])
-      .outputOptions(['-c:v libx264', '-preset ultrafast', '-crf 28', '-an', '-r 30'])
+      .outputOptions([
+        '-c:v libx264',
+        '-preset ultrafast',
+        '-crf 28',
+        '-an',
+        '-r 30',
+        '-threads 1' // Limita a 1 hilo para estabilizar el uso de CPU y evitar OOM
+      ])
       .save(outputPath)
       .on('end', resolve)
       .on('error', reject)
@@ -41,7 +50,7 @@ async function concatenateClips(clipPaths, outputPath) {
   })
 }
 
-// Mezcla video con audio de voz
+// Mezcla video con audio de voz sin re-codificar el video (casi instantáneo y estable)
 async function mixVideoAudio(videoPath, audioPath, outputPath, title) {
   return new Promise((resolve, reject) => {
     ffmpeg()
@@ -50,12 +59,9 @@ async function mixVideoAudio(videoPath, audioPath, outputPath, title) {
       .outputOptions([
         '-map 0:v',
         '-map 1:a',
-        '-c:v libx264',
-        '-preset ultrafast',
-        '-crf 26',
-        '-c:a aac',
+        '-c:v copy', // Copia directa del video sin procesarlo otra vez (ahorra 99% recursos)
+        '-c:a aac',  // Codifica el audio a AAC
         '-shortest',
-        '-r 30',
       ])
       .save(outputPath)
       .on('end', resolve)

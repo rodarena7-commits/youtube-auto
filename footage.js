@@ -4,6 +4,7 @@ const path  = require('path')
 const os    = require('os')
 
 const PEXELS_KEY = process.env.PEXELS_API_KEY
+const TARGET_WIDTH = parseInt(process.env.VIDEO_WIDTH) || 1280
 
 // Busca y descarga videos de Pexels según keywords
 async function fetchFootage(keywords, neededSeconds) {
@@ -36,9 +37,11 @@ async function fetchFootage(keywords, neededSeconds) {
       if (tried.has(video.id)) continue
       tried.add(video.id)
 
-      // Elegir el archivo HD disponible
+      // Elegir un archivo de video óptimo (preferir HD cercano al ancho objetivo, evitar UHD/4K)
       const file =
-        video.video_files.find(f => f.quality === 'hd' && f.width >= 1280) ||
+        video.video_files.find(f => f.width === TARGET_WIDTH) ||
+        video.video_files.find(f => f.width >= 1280 && f.width <= 1920) ||
+        video.video_files.find(f => f.quality === 'hd') ||
         video.video_files.find(f => f.quality === 'sd') ||
         video.video_files[0]
       if (!file) continue
