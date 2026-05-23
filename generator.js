@@ -1,6 +1,10 @@
 const OpenAI = require('openai')
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+// Groq es compatible con la API de OpenAI — gratis y más rápido
+const client = new OpenAI({
+  apiKey:  process.env.GROQ_API_KEY,
+  baseURL: 'https://api.groq.com/openai/v1',
+})
 
 const NICHE = process.env.NICHE || 'finanzas personales e inversiones'
 
@@ -29,7 +33,7 @@ Respondé SOLO con este JSON válido, sin markdown:
 }`
 
   const response = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'llama-3.3-70b-versatile',
     messages: [{ role: 'user', content: prompt }],
     temperature: 0.8,
     max_tokens: 1200,

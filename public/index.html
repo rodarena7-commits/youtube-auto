@@ -122,7 +122,7 @@ async function loadStatus() {
     const checks = document.getElementById('checks')
     checks.innerHTML = [
       ['YouTube', healthRes.ytReady],
-      ['OpenAI', healthRes.openaiReady],
+      ['Groq AI', healthRes.openaiReady],
       ['Pexels', healthRes.pexelsReady],
     ].map(([name, ok]) =>
       `<div class="check ${ok ? 'check-ok' : 'check-bad'}">${ok ? '✓' : '✗'} ${name}</div>`

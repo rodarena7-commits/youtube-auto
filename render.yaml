@@ -5,7 +5,7 @@ services:
     buildCommand: npm install
     startCommand: node server.js
     envVars:
-      - key: OPENAI_API_KEY
+      - key: GROQ_API_KEY
         sync: false
       - key: PEXELS_API_KEY
         sync: false

@@ -65,7 +65,7 @@ app.get('/health', (req, res) => {
   res.json({
     ok: true,
     ytReady:     !!process.env.YOUTUBE_REFRESH_TOKEN,
-    openaiReady: !!process.env.OPENAI_API_KEY,
+    openaiReady: !!process.env.GROQ_API_KEY,
     pexelsReady: !!process.env.PEXELS_API_KEY,
     niche:       process.env.NICHE || 'finanzas personales e inversiones',
     schedule:    process.env.CRON_SCHEDULE || '0 9 * * *',
