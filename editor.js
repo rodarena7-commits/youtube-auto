@@ -7,8 +7,8 @@ const os         = require('os')
 ffmpeg.setFfmpegPath(ffmpegPath)
 
 const CHANNEL_NAME = process.env.CHANNEL_NAME || 'Mi Canal'
-const VIDEO_WIDTH = parseInt(process.env.VIDEO_WIDTH) || 1280
-const VIDEO_HEIGHT = parseInt(process.env.VIDEO_HEIGHT) || 720
+const VIDEO_WIDTH = parseInt(process.env.VIDEO_WIDTH) || 960
+const VIDEO_HEIGHT = parseInt(process.env.VIDEO_HEIGHT) || 540
 
 // Escala + recorta un clip a la resolución configurada con duración exacta
 async function processClip(inputPath, outputPath, duration) {
@@ -26,7 +26,8 @@ async function processClip(inputPath, outputPath, duration) {
         '-crf 28',
         '-an',
         '-r 30',
-        '-threads 1' // Limita a 1 hilo para estabilizar el uso de CPU y evitar OOM
+        '-threads 1', // Limita a 1 hilo para estabilizar el uso de CPU y evitar OOM
+        '-bf 0'       // Deshabilita B-Frames para reducir el búfer de RAM a la mitad
       ])
       .save(outputPath)
       .on('end', resolve)
@@ -69,7 +70,7 @@ async function mixVideoAudio(videoPath, audioPath, outputPath, title, srtPath = 
       // Usamos el filtro de subtítulos de FFmpeg. Al ser un archivo ASS, respeta estilos y posiciones.
       command.videoFilters(`subtitles='${srtPath.replace(/\\/g, '/')}'`)
       // Es necesario re-codificar la pista de video para quemar los subtítulos
-      outputOptions.push('-c:v libx264', '-preset ultrafast', '-crf 28')
+      outputOptions.push('-c:v libx264', '-preset ultrafast', '-crf 28', '-bf 0')
     } else {
       // Si no hay subtítulos, hacemos copia directa súper rápida sin procesar video de nuevo
       outputOptions.push('-c:v copy')

@@ -136,7 +136,7 @@ app.get('/health', (req, res) => {
     openaiReady: !!process.env.GROQ_API_KEY,
     pexelsReady: !!process.env.PEXELS_API_KEY,
     niche:       process.env.NICHE || 'finanzas personales e inversiones',
-    schedule:    process.env.CRON_SCHEDULE || '0 9 * * *',
+    schedule:    process.env.CRON_SCHEDULE || '0 1,9,17 * * *',
     channel:     process.env.CHANNEL_NAME || '—',
   })
 })
@@ -272,7 +272,7 @@ async function runPipeline() {
 }
 
 // ── Scheduler automático ──────────────────────────────────────
-const schedule = process.env.CRON_SCHEDULE || '0 9 * * *' // 9am todos los días
+const schedule = process.env.CRON_SCHEDULE || '0 1,9,17 * * *' // Cada 8 horas (01 am, 09 am, 05 pm)
 cron.schedule(schedule, () => {
   console.log('⏰ Scheduler: iniciando generación automática...')
   runPipeline()

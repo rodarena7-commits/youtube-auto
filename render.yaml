@@ -24,6 +24,6 @@ services:
       - key: CHANNEL_NAME
         value: "rodarena7"
       - key: CRON_SCHEDULE
-        value: "0 9 * * *"
+        value: "0 1,9,17 * * *"
       - key: VIDEO_PRIVACY
         value: "public"

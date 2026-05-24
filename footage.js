@@ -35,6 +35,7 @@ async function fetchFootage(keywords, neededSeconds, onProgress = null) {
     for (const video of videos) {
       if (totalSecs >= neededSeconds + 10) break
       if (tried.has(video.id)) continue
+      if (video.duration && video.duration > 25) continue // Omitir clips de fondo gigantescos para ahorrar RAM
       tried.add(video.id)
 
       // Elegir un archivo de video óptimo (preferir HD cercano al ancho objetivo, evitar UHD/4K)

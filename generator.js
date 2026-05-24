@@ -19,7 +19,7 @@ async function generateScript() {
   const prompt = `Eres un guionista profesional de YouTube en español para el nicho: "${NICHE}".
 ${usedList}
 
-Generá un video educativo/informativo de exactamente 3 minutos (450 palabras aprox).
+Generá un video educativo/informativo de exactamente 1.5 a 2 minutos (220 a 260 palabras aprox).
 El video no tiene locutor visible ni cara, solo voz en off con imágenes de fondo.
 
 Respondé SOLO con este JSON válido, sin markdown:
@@ -29,7 +29,7 @@ Respondé SOLO con este JSON válido, sin markdown:
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5", "tag6", "tag7", "tag8"],
   "keywords": ["keyword1", "keyword2", "keyword3"],
   "topic": "resumen de 5 palabras del tema",
-  "script": "Guión completo de 450 palabras para narrar en voz off. Empezá con un hook impactante, desarrollá el contenido con datos y ejemplos concretos, y cerrá con un llamado a la acción pidiendo suscripción."
+  "script": "Guión completo de exactamente 220 a 260 palabras para narrar en voz off. Empezá con un hook impactante, desarrollá el contenido con datos y ejemplos concretos, y cerrá con un llamado a la acción pidiendo suscripción."
 }`
 
   const response = await client.chat.completions.create({
