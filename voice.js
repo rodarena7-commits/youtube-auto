@@ -31,40 +31,51 @@ async function saveTTS(text, filePath) {
   })
 }
 
-async function textToSpeech(script, outputPath) {
+async function textToSpeech(script, outputPath, onProgress) {
   const chunks  = splitText(script)
   const tmpDir  = os.tmpdir()
   const parts   = []
+  const timings = []
 
+  let currentTime = 0
   for (let i = 0; i < chunks.length; i++) {
     const p = path.join(tmpDir, `tts_chunk_${Date.now()}_${i}.mp3`)
+    if (onProgress) onProgress(`Generando audio chunk ${i + 1}/${chunks.length}`, Math.round((i / chunks.length) * 100))
     await saveTTS(chunks[i], p)
+    const duration = await getAudioDuration(p)
+    timings.push({
+      text: chunks[i],
+      start: currentTime,
+      end: currentTime + duration
+    })
+    currentTime += duration
     parts.push(p)
   }
 
+  if (onProgress) onProgress('Concatenando chunks de audio...', 95)
+
   if (parts.length === 1) {
     fs.renameSync(parts[0], outputPath)
-    return outputPath
+  } else {
+    // Concatenar chunks con FFmpeg
+    const listFile = path.join(tmpDir, `tts_list_${Date.now()}.txt`)
+    fs.writeFileSync(listFile, parts.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n'))
+
+    await new Promise((resolve, reject) => {
+      ffmpeg()
+        .input(listFile)
+        .inputOptions(['-f concat', '-safe 0'])
+        .outputOptions(['-c copy'])
+        .save(outputPath)
+        .on('end', resolve)
+        .on('error', reject)
+    })
+
+    parts.forEach(p => { try { fs.unlinkSync(p) } catch {} })
+    try { fs.unlinkSync(listFile) } catch {}
   }
 
-  // Concatenar chunks con FFmpeg
-  const listFile = path.join(tmpDir, `tts_list_${Date.now()}.txt`)
-  fs.writeFileSync(listFile, parts.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n'))
-
-  await new Promise((resolve, reject) => {
-    ffmpeg()
-      .input(listFile)
-      .inputOptions(['-f concat', '-safe 0'])
-      .outputOptions(['-c copy'])
-      .save(outputPath)
-      .on('end', resolve)
-      .on('error', reject)
-  })
-
-  parts.forEach(p => { try { fs.unlinkSync(p) } catch {} })
-  try { fs.unlinkSync(listFile) } catch {}
-
-  return outputPath
+  return { audioPath: outputPath, timings }
 }
 
 // Devuelve duración en segundos de un archivo de audio

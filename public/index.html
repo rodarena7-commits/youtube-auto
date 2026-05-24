@@ -243,14 +243,30 @@ function renderSteps(steps) {
   return steps.map(s => {
     const icon = STEP_ICONS[s.key]?.[s.status] || '⏳'
     const spin = s.status === 'running'
+
+    // Calcular la duración en segundos
+    let durationText = ''
+    if (s.startedAt) {
+      const start = new Date(s.startedAt).getTime()
+      const end = s.finishedAt ? new Date(s.finishedAt).getTime() : Date.now()
+      const diff = Math.max(0, Math.round((end - start) / 1000))
+      durationText = spin ? `(${diff}s...)` : `(${diff}s)`
+    }
+
+    const detailText = s.detail || (s.status === 'pending' ? 'Pendiente' : s.status === 'running' ? 'En proceso...' : s.status === 'done' ? 'Completado' : 'Error')
+    const stepPctText = s.stepPct !== undefined ? `${s.stepPct}%` : `${s.pct}%`
+
     return `
       <div class="step ${s.status}">
         <div class="step-icon">${spin ? `<span class="spinner">${icon}</span>` : icon}</div>
         <div class="step-body">
-          <div class="step-name">${s.label}</div>
-          <div class="step-detail">${s.status === 'pending' ? 'Pendiente' : s.status === 'running' ? 'En proceso...' : s.status === 'done' ? 'Completado' : 'Error'}</div>
+          <div class="step-name" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>${s.label}</span>
+            <span style="font-size:.72rem;color:#666;font-weight:normal">${durationText}</span>
+          </div>
+          <div class="step-detail" style="color:#a3a3a3;font-size:.75rem;margin-top:.15rem">${detailText}</div>
         </div>
-        <div style="font-size:.7rem;color:#333">${s.pct}%</div>
+        <div style="font-size:.75rem;color:#eab308;font-weight:700;margin-left:.75rem">${stepPctText}</div>
       </div>`
   }).join('')
 }

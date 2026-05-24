@@ -6,8 +6,8 @@ const os    = require('os')
 const PEXELS_KEY = process.env.PEXELS_API_KEY
 const TARGET_WIDTH = parseInt(process.env.VIDEO_WIDTH) || 1280
 
-// Busca y descarga videos de Pexels según keywords
-async function fetchFootage(keywords, neededSeconds) {
+// Busca y descarga videos de Pexels según keywords con soporte de progreso
+async function fetchFootage(keywords, neededSeconds, onProgress = null) {
   if (!PEXELS_KEY) throw new Error('PEXELS_API_KEY no configurada')
 
   const tmpDir    = os.tmpdir()
@@ -52,7 +52,12 @@ async function fetchFootage(keywords, neededSeconds) {
         const duration = video.duration || 10
         clips.push({ path: clipPath, duration })
         totalSecs += duration
-        console.log(`  📹 Clip descargado: ${kw} (${duration}s)`)
+        const msg = `Clip descargado: ${kw} (${duration}s)`
+        console.log(`  📹 ${msg}`)
+        if (onProgress) {
+          const pct = Math.round((totalSecs / (neededSeconds + 10)) * 100)
+          onProgress(`Descargado clip ${clips.length} (${duration}s): ${kw}`, Math.min(99, pct))
+        }
       } catch (e) {
         console.warn(`  Error descargando clip ${video.id}: ${e.message}`)
       }

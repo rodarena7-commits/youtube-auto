@@ -50,19 +50,33 @@ async function concatenateClips(clipPaths, outputPath) {
   })
 }
 
-// Mezcla video con audio de voz sin re-codificar el video (casi instantáneo y estable)
-async function mixVideoAudio(videoPath, audioPath, outputPath, title) {
+// Mezcla video con audio de voz y opcionalmente quema subtítulos ASS (soporta estilos y portada)
+async function mixVideoAudio(videoPath, audioPath, outputPath, title, srtPath = null) {
   return new Promise((resolve, reject) => {
-    ffmpeg()
+    const command = ffmpeg()
       .input(videoPath)
       .input(audioPath)
-      .outputOptions([
-        '-map 0:v',
-        '-map 1:a',
-        '-c:v copy', // Copia directa del video sin procesarlo otra vez (ahorra 99% recursos)
-        '-c:a aac',  // Codifica el audio a AAC
-        '-shortest',
-      ])
+
+    const outputOptions = [
+      '-map 0:v',
+      '-map 1:a',
+      '-c:a aac',
+      '-shortest',
+      '-threads 1' // Limitar hilos a 1 para evitar OOM al transcodificar en Render
+    ]
+
+    if (srtPath && fs.existsSync(srtPath)) {
+      // Usamos el filtro de subtítulos de FFmpeg. Al ser un archivo ASS, respeta estilos y posiciones.
+      command.videoFilters(`subtitles='${srtPath.replace(/\\/g, '/')}'`)
+      // Es necesario re-codificar la pista de video para quemar los subtítulos
+      outputOptions.push('-c:v libx264', '-preset ultrafast', '-crf 28')
+    } else {
+      // Si no hay subtítulos, hacemos copia directa súper rápida sin procesar video de nuevo
+      outputOptions.push('-c:v copy')
+    }
+
+    command
+      .outputOptions(outputOptions)
       .save(outputPath)
       .on('end', resolve)
       .on('error', reject)
@@ -70,7 +84,7 @@ async function mixVideoAudio(videoPath, audioPath, outputPath, title) {
 }
 
 // Pipeline completo: clips + audio → video final
-async function buildVideo(clips, audioPath, audioDuration, outputPath, title) {
+async function buildVideo(clips, audioPath, audioDuration, outputPath, title, srtPath = null, onProgress = null) {
   const tmpDir    = os.tmpdir()
   const processed = []
 
@@ -79,7 +93,9 @@ async function buildVideo(clips, audioPath, audioDuration, outputPath, title) {
   for (let i = 0; i < clips.length && remaining > 0; i++) {
     const duration = Math.min(clips[i].duration, remaining)
     const out = path.join(tmpDir, `proc_${Date.now()}_${i}.mp4`)
-    console.log(`  🎬 Procesando clip ${i + 1}/${clips.length} (${duration}s)`)
+    const msg = `Procesando clip ${i + 1}/${clips.length} (${duration}s)`
+    console.log(`  🎬 ${msg}`)
+    if (onProgress) onProgress(msg, Math.round((i / clips.length) * 80))
     await processClip(clips[i].path, out, duration)
     processed.push(out)
     remaining -= duration
@@ -90,6 +106,9 @@ async function buildVideo(clips, audioPath, audioDuration, outputPath, title) {
     const last = clips[clips.length - 1]
     const duration = Math.min(last.duration, remaining)
     const out = path.join(tmpDir, `proc_loop_${Date.now()}.mp4`)
+    const msg = `Repitiendo último clip por duración restante (${duration}s)`
+    console.log(`  🎬 ${msg}`)
+    if (onProgress) onProgress(msg, 80)
     await processClip(last.path, out, duration)
     processed.push(out)
     remaining -= duration
@@ -98,11 +117,15 @@ async function buildVideo(clips, audioPath, audioDuration, outputPath, title) {
   // 3. Concatenar clips
   const concatPath = path.join(tmpDir, `concat_${Date.now()}.mp4`)
   console.log('  🔗 Concatenando clips...')
+  if (onProgress) onProgress('Concatenando clips normalizados...', 85)
   await concatenateClips(processed, concatPath)
 
-  // 4. Mezclar con audio + watermark
+  // 4. Mezclar con audio + subtítulos / portada
   console.log('  🎵 Mezclando audio y video...')
-  await mixVideoAudio(concatPath, audioPath, outputPath, title)
+  const hasSubs = srtPath && fs.existsSync(srtPath)
+  const mixMsg = hasSubs ? 'Mezclando audio y quemando subtítulos/portada...' : 'Mezclando audio y video...'
+  if (onProgress) onProgress(mixMsg, 90)
+  await mixVideoAudio(concatPath, audioPath, outputPath, title, srtPath)
 
   // Cleanup
   processed.forEach(p => { try { fs.unlinkSync(p) } catch {} })

@@ -16,6 +16,51 @@ const PORT = process.env.PORT || 3000
 app.use(express.json())
 app.use(express.static('public'))
 
+// ── Helper para formatear tiempo de ASS (H:MM:SS.cs) ─────────
+function formatASSTime(seconds) {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
+  const cs = Math.round((seconds - Math.floor(seconds)) * 100)
+  
+  const hStr = h.toString()
+  const mStr = m.toString().padStart(2, '0')
+  const sStr = s.toString().padStart(2, '0')
+  const csStr = cs.toString().padStart(2, '0').substring(0, 2)
+  
+  return `${hStr}:${mStr}:${sStr}.${csStr}`
+}
+
+// ── Generar archivo ASS de subtítulos y portada ───────────────
+function generateASS(timings, title, outputPath) {
+  const cleanTitle = title.toUpperCase().replace(/\?|¿|!|¡/g, '').trim()
+  let content = `[Script Info]
+ScriptType: v4.00+
+PlayResX: 1280
+PlayResY: 720
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,20,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,3,1,1,2,10,10,25,1
+Style: TitleStyle,Arial,32,&H0000FFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,3,1,1,5,10,10,15,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+`
+  // 1. Agregar la portada (Título centrado los primeros 4 segundos)
+  content += `Dialogue: 0,0:00:00.00,0:00:04.00,TitleStyle,,0,0,0,,${cleanTitle}\n`
+
+  // 2. Agregar los subtítulos normales abajo
+  timings.forEach(t => {
+    const startStr = formatASSTime(t.start)
+    const endStr = formatASSTime(t.end)
+    const textClean = t.text.replace(/\n/g, ' ').trim()
+    content += `Dialogue: 0,${startStr},${endStr},Default,,0,0,0,,${textClean}\n`
+  })
+
+  fs.writeFileSync(outputPath, content, 'utf-8')
+}
+
 // ── Estado global ────────────────────────────────────────────
 const history = []
 let running   = false
@@ -113,45 +158,80 @@ async function runPipeline() {
   const videoPath = path.join(tmpDir, `final_${jobId}.mp4`)
   let clips = []
 
-  function advance(key, pct) {
-    steps = setStepRunning(steps, key)
+  function advance(key, overallPct, detail = '') {
+    const now = new Date().toISOString()
+    steps = steps.map(s => {
+      if (s.status === 'running' && s.key !== key) {
+        return { ...s, status: 'done', finishedAt: now, stepPct: 100 }
+      }
+      if (s.key === key) {
+        return { ...s, status: 'running', startedAt: s.startedAt || now, detail: detail || s.label }
+      }
+      return s
+    })
     lastJob.steps      = steps
-    lastJob.overallPct = pct
+    lastJob.overallPct = overallPct
+  }
+
+  function updateProgress(key, detail, stepPct) {
+    steps = steps.map(s => {
+      if (s.key === key) {
+        return { ...s, detail, stepPct }
+      }
+      return s
+    })
+    lastJob.steps = steps
   }
 
   try {
     // 1. Guión
-    advance('script', 5)
+    advance('script', 5, 'Conectando con Groq API...')
     console.log('📝 Generando guión...')
     const script = await generateScript()
     lastJob.title = script.title
     lastJob.overallPct = 15
+    updateProgress('script', `Guión generado: "${script.title}"`, 100)
     console.log(`  Título: ${script.title}`)
 
     // 2. Voz
-    advance('voice', 18)
+    advance('voice', 15, 'Iniciando generación de voz...')
     console.log('🎤 Generando voz...')
-    await textToSpeech(script.script, audioPath)
+    const { timings } = await textToSpeech(script.script, audioPath, (msg, stepPct) => {
+      updateProgress('voice', msg, stepPct)
+    })
     const audioDuration = await getAudioDuration(audioPath)
     lastJob.overallPct = 30
+    updateProgress('voice', `Voz generada (${Math.round(audioDuration)}s)`, 100)
     console.log(`  Duración: ${Math.round(audioDuration)}s`)
 
     // 3. Footage
-    advance('footage', 33)
+    advance('footage', 30, 'Buscando videos de fondo en Pexels...')
     console.log('📹 Descargando footage...')
-    clips = await fetchFootage(script.keywords, audioDuration)
+    clips = await fetchFootage(script.keywords, audioDuration, (msg, stepPct) => {
+      updateProgress('footage', msg, stepPct)
+    })
     lastJob.overallPct = 60
+    updateProgress('footage', `${clips.length} clips descargados con éxito`, 100)
     console.log(`  ${clips.length} clips descargados`)
 
     // 4. Edición
-    advance('editing', 63)
+    advance('editing', 60, 'Inicializando el editor de video...')
     console.log('🎬 Editando video...')
-    await buildVideo(clips, audioPath, audioDuration, videoPath, script.title)
+    
+    // Generar archivo ASS de subtítulos y portada
+    const assPath = path.join(__dirname, 'subtitles.ass')
+    generateASS(timings, script.title, assPath)
+
+    await buildVideo(clips, audioPath, audioDuration, videoPath, script.title, assPath, (msg, stepPct) => {
+      updateProgress('editing', msg, stepPct)
+      lastJob.overallPct = 60 + Math.round(stepPct * 0.20)
+    })
     lastJob.overallPct = 80
+    updateProgress('editing', 'Video editado con subtítulos y portada listos', 100)
     console.log('  Video listo')
 
     // 5. Subida
-    advance('upload', 82)
+    advance('upload', 80, 'Preparando subida a YouTube...')
     console.log('⬆️ Subiendo a YouTube...')
     const result = await uploadVideo({
       videoPath,
@@ -160,12 +240,14 @@ async function runPipeline() {
       tags:        script.tags,
       privacy:     process.env.VIDEO_PRIVACY || 'public',
       onProgress:  pct => {
-        lastJob.overallPct = 82 + Math.round(pct * 0.18)
+        updateProgress('upload', `Subiendo a YouTube: ${pct}%`, pct)
+        lastJob.overallPct = 80 + Math.round(pct * 0.20)
       },
     })
 
     const videoUrl = `https://www.youtube.com/watch?v=${result.id}`
     console.log(`✅ Publicado: ${videoUrl}`)
+    updateProgress('upload', 'Publicado correctamente en YouTube', 100)
 
     lastJob = {
       status: 'done', title: script.title, videoUrl,
@@ -177,13 +259,14 @@ async function runPipeline() {
 
   } catch (e) {
     console.error(`❌ Error: ${e.message}`)
-    steps = steps.map(s => s.status === 'running' ? { ...s, status: 'error' } : s)
+    steps = steps.map(s => s.status === 'running' ? { ...s, status: 'error', finishedAt: new Date().toISOString() } : s)
     lastJob = { ...lastJob, status: 'error', error: e.message, steps, finishedAt: new Date().toISOString() }
     history.push({ ...lastJob })
   } finally {
     clips.forEach(c => { try { fs.unlinkSync(c.path) } catch {} })
     try { fs.unlinkSync(audioPath) } catch {}
     try { fs.unlinkSync(videoPath) } catch {}
+    try { fs.unlinkSync(path.join(__dirname, 'subtitles.ass')) } catch {}
     running = false
   }
 }
