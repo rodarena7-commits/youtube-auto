@@ -4,10 +4,11 @@ const fs        = require('fs')
 const path      = require('path')
 const os        = require('os')
 
-const { generateScript }            = require('./generator')
+const { generateScript, NICHE_BOOKS, NICHE_MUSIC }   = require('./generator')
 const { textToSpeech, getAudioDuration } = require('./voice')
 const { fetchFootage }              = require('./footage')
-const { buildVideo }                = require('./editor')
+const { fetchMusic }                = require('./music')
+const { buildVideo, buildMusicVideo } = require('./editor')
 const { getAuthUrl, handleCallback, uploadVideo } = require('./uploader')
 
 const app  = express()
@@ -142,7 +143,7 @@ app.get('/health', (req, res) => {
 })
 
 // ── Pipeline principal ────────────────────────────────────────
-async function runPipeline() {
+async function runPipeline(niche = null) {
   if (running) return
   running = true
   let steps = initSteps()
@@ -187,48 +188,81 @@ async function runPipeline() {
     // 1. Guión
     advance('script', 5, 'Conectando con Groq API...')
     console.log('📝 Generando guión...')
-    const script = await generateScript()
+    const script = await generateScript(niche)
     lastJob.title = script.title
     lastJob.overallPct = 15
     updateProgress('script', `Guión generado: "${script.title}"`, 100)
     console.log(`  Título: ${script.title}`)
 
-    // 2. Voz
-    advance('voice', 15, 'Iniciando generación de voz...')
-    console.log('🎤 Generando voz...')
-    const { timings } = await textToSpeech(script.script, audioPath, (msg, stepPct) => {
-      updateProgress('voice', msg, stepPct)
-    })
-    const audioDuration = await getAudioDuration(audioPath)
-    lastJob.overallPct = 30
-    updateProgress('voice', `Voz generada (${Math.round(audioDuration)}s)`, 100)
-    console.log(`  Duración: ${Math.round(audioDuration)}s`)
+    // Lógica condicional para nicho de música
+    const isMusic = niche === NICHE_MUSIC || (niche && niche.includes('música'))
 
-    // 3. Footage
-    advance('footage', 30, 'Buscando videos de fondo en Pexels...')
-    console.log('📹 Descargando footage...')
-    clips = await fetchFootage(script.keywords, audioDuration, (msg, stepPct) => {
-      updateProgress('footage', msg, stepPct)
-    })
-    lastJob.overallPct = 60
-    updateProgress('footage', `${clips.length} clips descargados con éxito`, 100)
-    console.log(`  ${clips.length} clips descargados`)
+    if (isMusic) {
+      // Flujo de música largo sin voz ni subtítulos
+      advance('voice', 15, 'Buscando pista de música relajante...')
+      console.log('🎵 Descargando música...')
+      await fetchMusic(script.keywords, audioPath, (msg, stepPct) => {
+        updateProgress('voice', msg, stepPct)
+      })
+      lastJob.overallPct = 30
+      updateProgress('voice', 'Música descargada', 100)
+      console.log('  Música lista')
 
-    // 4. Edición
-    advance('editing', 60, 'Inicializando el editor de video...')
-    console.log('🎬 Editando video...')
-    
-    // Generar archivo ASS de subtítulos y portada
-    const assPath = path.join(__dirname, 'subtitles.ass')
-    generateASS(timings, script.title, assPath)
+      advance('footage', 30, 'Buscando video de fondo en Pexels...')
+      console.log('📹 Descargando video de fondo...')
+      // Buscamos 1 solo clip largo de Pexels (pasando 0 como audioDuration no hace falta que descargue muchos clips)
+      clips = await fetchFootage(script.keywords, 30, (msg, stepPct) => {
+        updateProgress('footage', msg, stepPct)
+      })
+      lastJob.overallPct = 60
+      updateProgress('footage', 'Video de fondo descargado', 100)
+      console.log('  Video de fondo listo')
 
-    await buildVideo(clips, audioPath, audioDuration, videoPath, script.title, assPath, (msg, stepPct) => {
-      updateProgress('editing', msg, stepPct)
-      lastJob.overallPct = 60 + Math.round(stepPct * 0.20)
-    })
-    lastJob.overallPct = 80
-    updateProgress('editing', 'Video editado con subtítulos y portada listos', 100)
-    console.log('  Video listo')
+      advance('editing', 60, 'Inicializando el editor de video...')
+      console.log('🎬 Editando video musical (loop de 30 min)...')
+      await buildMusicVideo(clips[0].path, audioPath, videoPath, (msg, stepPct) => {
+        updateProgress('editing', msg, stepPct)
+        lastJob.overallPct = 60 + Math.round(stepPct * 0.20)
+      })
+      lastJob.overallPct = 80
+      updateProgress('editing', 'Video musical de 30 minutos listo', 100)
+      console.log('  Video listo')
+
+    } else {
+      // Flujo normal con IA, TTS y subtítulos
+      advance('voice', 15, 'Iniciando generación de voz...')
+      console.log('🎤 Generando voz...')
+      const { timings } = await textToSpeech(script.script, audioPath, (msg, stepPct) => {
+        updateProgress('voice', msg, stepPct)
+      })
+      const audioDuration = await getAudioDuration(audioPath)
+      lastJob.overallPct = 30
+      updateProgress('voice', `Voz generada (${Math.round(audioDuration)}s)`, 100)
+      console.log(`  Duración: ${Math.round(audioDuration)}s`)
+
+      advance('footage', 30, 'Buscando videos de fondo en Pexels...')
+      console.log('📹 Descargando footage...')
+      clips = await fetchFootage(script.keywords, audioDuration, (msg, stepPct) => {
+        updateProgress('footage', msg, stepPct)
+      })
+      lastJob.overallPct = 60
+      updateProgress('footage', `${clips.length} clips descargados con éxito`, 100)
+      console.log(`  ${clips.length} clips descargados`)
+
+      advance('editing', 60, 'Inicializando el editor de video...')
+      console.log('🎬 Editando video...')
+      
+      const assPath = path.join(__dirname, 'subtitles.ass')
+      generateASS(timings, script.title, assPath)
+
+      await buildVideo(clips, audioPath, audioDuration, videoPath, script.title, assPath, (msg, stepPct) => {
+        updateProgress('editing', msg, stepPct)
+        lastJob.overallPct = 60 + Math.round(stepPct * 0.20)
+      })
+      lastJob.overallPct = 80
+      updateProgress('editing', 'Video editado con subtítulos y portada listos', 100)
+      console.log('  Video listo')
+    }
 
     // 5. Subida
     advance('upload', 80, 'Preparando subida a YouTube...')
@@ -271,13 +305,28 @@ async function runPipeline() {
   }
 }
 
-// ── Scheduler automático ──────────────────────────────────────
-const schedule = process.env.CRON_SCHEDULE || '0 1,9,17 * * *' // Cada 8 horas (01 am, 09 am, 05 pm)
-cron.schedule(schedule, () => {
-  console.log('⏰ Scheduler: iniciando generación automática...')
-  runPipeline()
+// ── Scheduler 1: Finanzas (01 am, 09 am, 05 pm ARG) ─────────
+const schedule1 = process.env.CRON_SCHEDULE || '0 1,9,17 * * *'
+cron.schedule(schedule1, () => {
+  console.log('⏰ [Finanzas] Iniciando generación automática...')
+  runPipeline(null) // null = usa NICHE por defecto
 }, { timezone: 'America/Argentina/Buenos_Aires' })
 
-console.log(`📅 Scheduler configurado: ${schedule}`)
+// ── Scheduler 2: Resúmenes de Libros (02 am, 10 am, 06 pm ARG) ─
+const schedule2 = process.env.CRON_SCHEDULE_2 || '0 2,10,18 * * *'
+cron.schedule(schedule2, () => {
+  console.log('⏰ [Libros] Iniciando generación automática...')
+  runPipeline(NICHE_BOOKS)
+}, { timezone: 'America/Argentina/Buenos_Aires' })
 
+// ── Scheduler 3: Música Relajante (03 am, 11 am, 07 pm ARG) ────
+const schedule3 = process.env.CRON_SCHEDULE_3 || '0 3,11,19 * * *'
+cron.schedule(schedule3, () => {
+  console.log('⏰ [Música] Iniciando generación automática...')
+  runPipeline(NICHE_MUSIC)
+}, { timezone: 'America/Argentina/Buenos_Aires' })
+
+console.log(`📅 Scheduler 1 (Finanzas): ${schedule1}`)
+console.log(`📅 Scheduler 2 (Libros):   ${schedule2}`)
+console.log(`📅 Scheduler 3 (Música):   ${schedule3}`)
 app.listen(PORT, () => console.log(`🚀 YouTube Auto en http://localhost:${PORT}`))

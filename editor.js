@@ -135,4 +135,30 @@ async function buildVideo(clips, audioPath, audioDuration, outputPath, title, sr
   return outputPath
 }
 
-module.exports = { buildVideo }
+// Pipeline para videos musicales largos: loop infinito de video y audio con stream copy (0% CPU/RAM)
+async function buildMusicVideo(clipPath, audioPath, outputPath, onProgress = null) {
+  const duration = 1800 // 30 minutos
+  
+  if (onProgress) onProgress('Generando video de 30 minutos en bucle...', 50)
+  
+  return new Promise((resolve, reject) => {
+    ffmpeg()
+      .inputOptions(['-stream_loop', '-1'])
+      .input(clipPath)
+      .inputOptions(['-stream_loop', '-1'])
+      .input(audioPath)
+      .outputOptions([
+        `-t ${duration}`,
+        '-c copy',     // Stream copy (no recodifica, súper rápido y ligero)
+        '-shortest'
+      ])
+      .save(outputPath)
+      .on('end', () => {
+        if (onProgress) onProgress('Video musical generado', 100)
+        resolve(outputPath)
+      })
+      .on('error', reject)
+  })
+}
+
+module.exports = { buildVideo, buildMusicVideo }

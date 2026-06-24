@@ -21,9 +21,17 @@ services:
         sync: false
       - key: NICHE
         value: "finanzas personales e inversiones en Argentina"
-      - key: CHANNEL_NAME
-        value: "rodarena7"
       - key: CRON_SCHEDULE
         value: "0 1,9,17 * * *"
+      - key: NICHE_BOOKS
+        value: "resúmenes de libros de no ficción, desarrollo personal y negocios en español"
+      - key: CRON_SCHEDULE_2
+        value: "0 2,10,18 * * *"
+      - key: NICHE_MUSIC
+        value: "música relajante para dormir, estudiar, concentrarse y lofi beats"
+      - key: CRON_SCHEDULE_3
+        value: "0 3,11,19 * * *"
+      - key: CHANNEL_NAME
+        value: "rodarena7"
       - key: VIDEO_PRIVACY
         value: "public"
